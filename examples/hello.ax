@@ -1,0 +1,8 @@
+module hello
+
+function greet(name: Text) -> Text:
+    purpose:
+        Return a greeting.
+
+    action:
+        return "Hello, " + name

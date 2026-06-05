@@ -2,7 +2,13 @@ module hello
 
 function greet(name: Text) -> Text:
     purpose:
-        Return a greeting.
+        Return a friendly greeting for a person.
+
+    requires:
+        name != ""
 
     action:
         return "Hello, " + name
+
+    examples:
+        greet("Frank") == "Hello, Frank"

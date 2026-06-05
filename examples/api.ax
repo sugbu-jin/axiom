@@ -1,0 +1,14 @@
+module api
+
+function is_valid_product_id(product_id: Text) -> Boolean:
+    purpose:
+        Check whether a product ID is not empty.
+
+    requires:
+        product_id != ""
+
+    action:
+        return product_id != ""
+
+    examples:
+        is_valid_product_id("P001") == true

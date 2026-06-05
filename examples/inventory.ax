@@ -1,0 +1,16 @@
+module inventory
+
+function needs_reorder(quantity: Number, reorder_level: Number) -> Boolean:
+    purpose:
+        Determine whether a product needs restocking.
+
+    requires:
+        quantity >= 0
+        reorder_level >= 0
+
+    action:
+        return quantity <= reorder_level
+
+    examples:
+        needs_reorder(5, 10) == true
+        needs_reorder(20, 10) == false

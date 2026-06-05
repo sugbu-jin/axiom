@@ -24,6 +24,14 @@ The language is optimized for source code that can answer these questions before
 
 ## Core blocks
 
+### app
+
+Declares an application that can be described by intent first and technical details second.
+
+```axiom
+app TodoApp:
+```
+
 ### module
 
 Declares the module name.
@@ -89,6 +97,47 @@ Examples are part of the collaboration contract. They should cover normal behavi
 
 ## Collaboration expectations
 
+An app intended for shared human and AI maintenance should include:
+
+```axiom
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    requires:
+        Users can create tasks.
+        Users can mark tasks as done.
+        Tasks should persist after refresh.
+
+    action:
+        Create a simple task tracking application.
+
+    examples:
+        When a user adds "Buy milk", it appears in the task list.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a clean task list.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide APIs for tasks.
+
+    database:
+        stack: sqlite
+        descriptions:
+            Store task records.
+
+    deploy:
+        target: aws-ec2
+        descriptions:
+            Deploy the generated app to an EC2 server.
+        credentials:
+            env
+```
+
 A function intended for shared human and AI maintenance should include:
 
 ```axiom
@@ -111,7 +160,11 @@ function needs_reorder(quantity: Number, reorder_level: Number) -> Boolean:
         needs_reorder(20, 10) == false
 ```
 
-The current Python transpiler executes `requires`, `action`, and `examples`. The parser preserves `ensures` so future compiler passes can enforce postconditions.
+The current function-level Python transpiler executes `requires`, `action`, and `examples`. The parser preserves `ensures` so future compiler passes can enforce postconditions.
+
+The current app-level project builder parses `purpose`, `requires`, `action`, `examples`, `frontend`, `backend`, `database`, and `deploy`. Generators use those sections to produce stack-specific outputs.
+
+Credentials should not be stored directly in `.ax` files. Use references such as `env` or a future secrets provider.
 
 ## Project layout
 
@@ -131,6 +184,7 @@ The initial project configuration is:
 
 ```toml
 name = "todo-api"
+stack = "python-cli"
 source = "src"
 build = "build"
 entry = "todo_api.main"
@@ -140,11 +194,23 @@ The current project workflow is intentionally small:
 
 ```bash
 axiom new todo-api
+axiom new landing-page --stack static-site
 axiom build todo-api
 axiom run todo-api
 ```
 
 `axiom build` transpiles `.ax` files from `source` into Python files under `build`. `axiom run` builds the project and executes the configured entry function.
+
+## Stack targets
+
+A stack target controls how Axiom turns app intent into runnable files.
+
+Current stack targets:
+
+- `python-cli`: Generates Python modules and a `build/__main__.py` entrypoint.
+- `static-site`: Generates a dependency-free `build/index.html` page from module and function intent.
+
+Future stack targets may generate APIs, full-stack web apps, mobile apps, or database-backed systems while keeping the `.ax` source focused on app purpose, data, actions, examples, and permissions.
 
 ## Primitive types
 

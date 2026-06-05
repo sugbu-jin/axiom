@@ -4,9 +4,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-from .diagnostics import check_module
+from .app_parser import AxiomAppSyntaxError, is_app_source, parse_app_source
+from .diagnostics import check_app, check_module
 from .parser import AxiomSyntaxError, parse_file
-from .project import AxiomProjectError, build_project, create_project, run_project
+from .project import AxiomProjectError, build_project, create_project, list_stacks, run_project
 from .transpiler_python import generate_test_code, transpile_module
 
 
@@ -35,8 +36,12 @@ def test_command(args: argparse.Namespace) -> int:
 
 
 def check_command(args: argparse.Namespace) -> int:
-    module = parse_file(args.file)
-    diagnostics = check_module(module)
+    path = Path(args.file)
+    source = path.read_text(encoding="utf-8")
+    if is_app_source(source):
+        diagnostics = check_app(parse_app_source(source))
+    else:
+        diagnostics = check_module(parse_file(path))
 
     if not diagnostics:
         print("No issues found.")
@@ -49,7 +54,7 @@ def check_command(args: argparse.Namespace) -> int:
 
 
 def new_command(args: argparse.Namespace) -> int:
-    path = create_project(args.name, parent=args.directory)
+    path = create_project(args.name, parent=args.directory, stack=args.stack)
     print(f"Created Axiom project at {path}")
     return 0
 
@@ -63,6 +68,12 @@ def build_command(args: argparse.Namespace) -> int:
 
 def run_command(args: argparse.Namespace) -> int:
     return run_project(args.project)
+
+
+def stacks_command(args: argparse.Namespace) -> int:
+    for stack in list_stacks():
+        print(stack)
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -85,6 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
     new_parser = subparsers.add_parser("new", help="Create a new Axiom project")
     new_parser.add_argument("name")
     new_parser.add_argument("-d", "--directory", default=".")
+    new_parser.add_argument("--stack", default="python-cli", choices=list_stacks())
     new_parser.set_defaults(func=new_command)
 
     build_project_parser = subparsers.add_parser("build", help="Build an Axiom project")
@@ -95,6 +107,9 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("project", nargs="?", default=".")
     run_parser.set_defaults(func=run_command)
 
+    stacks_parser = subparsers.add_parser("stacks", help="List supported project stacks")
+    stacks_parser.set_defaults(func=stacks_command)
+
     return parser
 
 
@@ -104,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return args.func(args)
-    except (AxiomProjectError, AxiomSyntaxError) as exc:
+    except (AxiomAppSyntaxError, AxiomProjectError, AxiomSyntaxError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

@@ -1,0 +1,42 @@
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    requires:
+        Users can create tasks.
+        Users can mark tasks as done.
+        Users can delete tasks.
+        Tasks should persist after refresh.
+
+    action:
+        Create a simple task tracking application.
+        Keep the experience clear enough for non-programmers to review.
+
+    examples:
+        When a user adds "Buy milk", it appears in the task list.
+        When a user marks "Buy milk" as done, it moves to completed tasks.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a clean task list.
+            Include an input for adding new tasks.
+            Show active and completed tasks separately.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide APIs for creating, listing, updating, and deleting tasks.
+            Validate that task titles are not empty.
+
+    database:
+        stack: sqlite
+        descriptions:
+            Store tasks with title, status, and created time.
+
+    deploy:
+        target: aws-ec2
+        descriptions:
+            Deploy the generated app to an EC2 server.
+        credentials:
+            env

@@ -4,7 +4,9 @@ Axiom is an experimental open-source programming language designed for humans an
 
 It combines code, intent, contracts, examples, side-effect declarations, and agent permissions in one readable format.
 
-The goal is not to replace Python, TypeScript, Rust, or Go immediately. The first goal is to create a language that humans can review confidently and AI agents can understand, modify, test, and maintain safely.
+The goal is not to replace Python, TypeScript, Rust, or Go immediately. The first goal is to help people describe useful apps clearly enough that humans, AI agents, and generators can turn those descriptions into working software.
+
+Axiom separates what an app should do from how it is implemented. Non-programmers can provide intent and behavior descriptions, while technical users can optionally provide stack and deployment details.
 
 ## Why Axiom exists
 
@@ -22,6 +24,7 @@ What output does it promise?
 What can fail?
 How can we test it?
 What may an AI agent safely change?
+Which technical stack should generate the app?
 ```
 
 ## Design principles
@@ -57,12 +60,41 @@ Good early use cases:
 
 - Business rules that need clear intent
 - Small generated Python apps
+- Static websites generated from Axiom intent
 - API and domain logic prototypes
 - Testable specifications
 - Agent-editable modules inside a larger project
 - Code generation experiments targeting Python first
 
 ## Example
+
+```axiom
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    requires:
+        Users can create tasks.
+        Users can mark tasks as done.
+
+    action:
+        Create a simple task tracking application.
+
+    examples:
+        When a user adds "Buy milk", it appears in the task list.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a clean task list.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide APIs for tasks.
+```
+
+Low-level functions are also supported:
 
 ```axiom
 module inventory
@@ -128,6 +160,19 @@ axiom build
 axiom run
 ```
 
+Choose a stack:
+
+```bash
+axiom stacks
+axiom new landing-page --stack static-site
+axiom new todo-api --stack python-cli
+```
+
+Current stacks:
+
+- `python-cli`: generates runnable Python files.
+- `static-site`: generates a dependency-free `build/index.html`.
+
 Run the repository test suite:
 
 ```bash
@@ -151,11 +196,14 @@ axiom/
 ├── examples/
 │   ├── hello.ax
 │   ├── inventory.ax
-│   └── api.ax
+│   ├── api.ax
+│   └── todo_app.ax
 ├── compiler/
 │   └── axiom/
 │       ├── __init__.py
 │       ├── ast.py
+│       ├── app.py
+│       ├── app_parser.py
 │       ├── diagnostics.py
 │       ├── parser.py
 │       ├── project.py
@@ -180,6 +228,7 @@ axiom/
 - Python transpiler
 - example runner
 - project scaffolding with `axiom new`
+- stack selection with `--stack`
 - project builds with `axiom build`
 - project execution with `axiom run`
 

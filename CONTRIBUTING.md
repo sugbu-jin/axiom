@@ -10,6 +10,8 @@ Axiom is designed for collaboration between human developers and AI agents, so c
 - Keep syntax readable.
 - Prefer deterministic compiler output.
 - Add examples for behavior.
+- Keep app descriptions useful to non-programmers.
+- Keep stack and deployment details optional.
 - Keep the prototype lightweight.
 
 ## Local Setup
@@ -30,7 +32,9 @@ pip install -e ".[dev]"
 Useful commands:
 
 ```bash
+axiom stacks
 axiom new todo-api
+axiom new landing-page --stack static-site
 axiom build todo-api
 axiom run todo-api
 axiom check examples/hello.ax

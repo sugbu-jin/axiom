@@ -9,6 +9,8 @@
 - Basic docs
 - Collaboration metadata checks
 - Project scaffolding, build, and run commands
+- Stack targets for `python-cli` and `static-site`
+- App-level syntax with optional frontend, backend, database, and deploy sections
 
 ## 0.2 Language expansion
 
@@ -20,6 +22,8 @@
 - Better expression parser
 - Agent policy parsing
 - Multi-file project imports
+- Additional stack targets such as `fastapi`, `fastapi-react`, and `nextjs`
+- Secure secret provider references for deployment workflows
 
 ## 0.3 Tooling
 

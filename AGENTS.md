@@ -16,6 +16,8 @@ Axiom exists to make software easier for humans and agents to understand togethe
 - Preserve `purpose` blocks unless the behavior truly changes.
 - Do not weaken `requires` or `ensures` without an explicit reason.
 - Add or update `examples` whenever behavior changes.
+- Preserve app-level `frontend`, `backend`, `database`, and `deploy` intent when changing generated outputs.
+- Never place raw deployment credentials in `.ax` files or generated code.
 - Keep generated output deterministic and simple.
 - Prefer small changes with tests over broad rewrites.
 - Do not add heavy runtime dependencies without a strong reason.
@@ -25,6 +27,7 @@ Axiom exists to make software easier for humans and agents to understand togethe
 Run these checks when relevant:
 
 ```bash
+axiom stacks
 axiom build
 axiom run
 axiom check examples/hello.ax

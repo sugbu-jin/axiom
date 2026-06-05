@@ -1,5 +1,38 @@
 # Axiom Syntax
 
+## App example
+
+```axiom
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    requires:
+        Users can create tasks.
+        Users can complete tasks.
+
+    action:
+        Build a task tracking experience.
+
+    examples:
+        When a user adds "Buy milk", it appears in the task list.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show active and completed tasks.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide task APIs.
+
+    deploy:
+        target: aws-ec2
+        credentials:
+            env
+```
+
 ## Function example
 
 ```axiom

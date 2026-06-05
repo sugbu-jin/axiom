@@ -193,13 +193,14 @@ entry = "todo_api.main"
 The current project workflow is intentionally small:
 
 ```bash
+axiom generate examples/login_page.ax --stack fastapi-react-sqlite --output login-page
 axiom new todo-api
 axiom new landing-page --stack static-site
 axiom build todo-api
 axiom run todo-api
 ```
 
-`axiom build` transpiles `.ax` files from `source` into Python files under `build`. `axiom run` builds the project and executes the configured entry function.
+`axiom generate` is the easiest path for non-programmers: it takes one `.ax` file, creates a project, builds generated files, and writes a `NEXT_STEPS.txt` guide. `axiom build` transpiles `.ax` files from `source` into files under `build`. `axiom run` builds the project and executes or explains how to run the selected stack.
 
 ## Stack targets
 
@@ -207,6 +208,7 @@ A stack target controls how Axiom turns app intent into runnable files.
 
 Current stack targets:
 
+- `fastapi-react-sqlite`: Generates a FastAPI backend, React frontend, and SQLite-backed login-capable app shell.
 - `python-cli`: Generates Python modules and a `build/__main__.py` entrypoint.
 - `static-site`: Generates a dependency-free `build/index.html` page from module and function intent.
 

@@ -33,6 +33,7 @@ Useful commands:
 
 ```bash
 axiom stacks
+axiom generate examples/login_page.ax --stack fastapi-react-sqlite --output login-page
 axiom new todo-api
 axiom new landing-page --stack static-site
 axiom build todo-api

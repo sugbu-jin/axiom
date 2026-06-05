@@ -9,7 +9,8 @@
 - Basic docs
 - Collaboration metadata checks
 - Project scaffolding, build, and run commands
-- Stack targets for `python-cli` and `static-site`
+- One-command app generation from a `.ax` file
+- Stack targets for `python-cli`, `static-site`, and `fastapi-react-sqlite`
 - App-level syntax with optional frontend, backend, database, and deploy sections
 
 ## 0.2 Language expansion

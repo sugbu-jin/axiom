@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: axiom
+Version: 0.1.0
+Summary: Experimental programming language for humans and AI agents
+Author: Axiom contributors
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Dynamic: license-file
+
 # Axiom
 
 Axiom is an experimental open-source programming language designed for humans and AI agents to build reliable software together.
@@ -170,17 +183,8 @@ axiom new todo-api --stack python-cli
 
 Current stacks:
 
-- `fastapi-react-sqlite`: generates a FastAPI backend, React frontend, and SQLite user store.
 - `python-cli`: generates runnable Python files.
 - `static-site`: generates a dependency-free `build/index.html`.
-
-Generate the login page example as a full-stack app:
-
-```bash
-axiom generate examples/login_page.ax --stack fastapi-react-sqlite --output login-page
-cd login-page
-cat NEXT_STEPS.txt
-```
 
 Run the repository test suite:
 

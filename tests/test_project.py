@@ -1,7 +1,15 @@
 import tempfile
 from pathlib import Path
 
-from axiom.project import AxiomProjectError, build_project, create_project, list_stacks, load_project, run_project
+from axiom.project import (
+    AxiomProjectError,
+    build_project,
+    create_project,
+    generate_project,
+    list_stacks,
+    load_project,
+    run_project,
+)
 
 
 def test_create_project_scaffolds_axiom_app():
@@ -61,4 +69,72 @@ def test_rejects_unknown_stack():
 
 
 def test_lists_supported_stacks():
-    assert list_stacks() == ["python-cli", "static-site"]
+    assert list_stacks() == ["fastapi-react-sqlite", "python-cli", "static-site"]
+
+
+def test_fastapi_react_sqlite_generates_login_app():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = create_project("login-page", parent=tmpdir, stack="fastapi-react-sqlite")
+        outputs = build_project(root)
+        output_paths = {path.relative_to(root / "build").as_posix() for path in outputs}
+
+        assert "backend/main.py" in output_paths
+        assert "backend/requirements.txt" in output_paths
+        assert "frontend/src/App.jsx" in output_paths
+        assert "frontend/package.json" in output_paths
+        assert "README.md" in output_paths
+
+        backend = (root / "build" / "backend" / "main.py").read_text(encoding="utf-8")
+        frontend = (root / "build" / "frontend" / "src" / "App.jsx").read_text(encoding="utf-8")
+
+        assert "FastAPI" in backend
+        assert "sqlite3" in backend
+        assert "@app.post('/api/login')" in backend
+        assert "password_hash" in backend
+        assert "fetch(`${API_BASE}/api/login`" in frontend
+
+
+def test_generate_project_builds_from_single_axiom_file():
+    source = """
+app LoginPage:
+    purpose:
+        Let users sign in.
+
+    requires:
+        Users can enter an email and password.
+
+    action:
+        Create a login page.
+
+    examples:
+        A valid user can sign in.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a login form.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide login APIs.
+
+    database:
+        stack: sqlite
+        descriptions:
+            Store users.
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        source_path = Path(tmpdir) / "login.ax"
+        output_path = Path(tmpdir) / "generated-login"
+        source_path.write_text(source, encoding="utf-8")
+
+        generated = generate_project(source_path, output=output_path, stack="fastapi-react-sqlite")
+
+        assert generated.root == output_path
+        assert (output_path / "src" / "main.ax").read_text(encoding="utf-8") == source
+        assert (output_path / "build" / "backend" / "main.py").exists()
+        assert (output_path / "build" / "frontend" / "src" / "App.jsx").exists()
+        assert (output_path / "NEXT_STEPS.txt").exists()
+        assert any("demo@example.com" in line for line in generated.next_steps)

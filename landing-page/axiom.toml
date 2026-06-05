@@ -1,0 +1,5 @@
+name = "landing-page"
+stack = "static-site"
+source = "src"
+build = "build"
+entry = "landing_page.main"

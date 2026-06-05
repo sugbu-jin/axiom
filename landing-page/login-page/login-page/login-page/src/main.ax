@@ -1,0 +1,34 @@
+app LoginPage:
+    purpose:
+        Let users sign in securely before accessing a protected app.
+
+    requires:
+        Users can enter an email and password.
+        Passwords are never stored as plain text.
+        Failed login attempts show a clear error message.
+
+    action:
+        Create a login page connected to a SQLite-backed user store.
+
+    examples:
+        When a user enters a valid email and password, they reach the dashboard.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a centered login form with email and password fields.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Provide an endpoint for login requests.
+
+    database:
+        stack: sqlite
+        descriptions:
+            Store users with id, email, password_hash, and created_at fields.
+
+    deploy:
+        target: local
+        credentials:
+            env

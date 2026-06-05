@@ -28,6 +28,7 @@ Run these checks when relevant:
 
 ```bash
 axiom stacks
+axiom generate examples/login_page.ax --stack fastapi-react-sqlite --output login-page
 axiom build
 axiom run
 axiom check examples/hello.ax

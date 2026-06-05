@@ -1,0 +1,5 @@
+name = "login-page"
+stack = "fastapi-react-sqlite"
+source = "src"
+build = "build"
+entry = "login_page.main"

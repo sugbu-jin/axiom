@@ -1,0 +1,5 @@
+name = "login-page"
+stack = "static-site"
+source = "src"
+build = "build"
+entry = "login_page.main"

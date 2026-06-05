@@ -25,6 +25,8 @@ Axiom exists to make software easier for humans and agents to understand togethe
 Run these checks when relevant:
 
 ```bash
+axiom build
+axiom run
 axiom check examples/hello.ax
 axiom test examples/hello.ax
 pytest

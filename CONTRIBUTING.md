@@ -30,6 +30,9 @@ pip install -e ".[dev]"
 Useful commands:
 
 ```bash
+axiom new todo-api
+axiom build todo-api
+axiom run todo-api
 axiom check examples/hello.ax
 axiom test examples/hello.ax
 pytest

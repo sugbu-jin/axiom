@@ -44,7 +44,7 @@ This repository includes:
 - Example `.ax` files
 - Minimal parser
 - Minimal Python transpiler
-- Basic CLI
+- Basic project CLI
 - Basic tests
 
 ## Why humans and agents should try it
@@ -56,6 +56,7 @@ For human developers, that means less hidden context and clearer review boundari
 Good early use cases:
 
 - Business rules that need clear intent
+- Small generated Python apps
 - API and domain logic prototypes
 - Testable specifications
 - Agent-editable modules inside a larger project
@@ -118,6 +119,15 @@ Check collaboration metadata:
 axiom check examples/hello.ax
 ```
 
+Create, build, and run a small app:
+
+```bash
+axiom new todo-api
+cd todo-api
+axiom build
+axiom run
+```
+
 Run the repository test suite:
 
 ```bash
@@ -148,6 +158,7 @@ axiom/
 │       ├── ast.py
 │       ├── diagnostics.py
 │       ├── parser.py
+│       ├── project.py
 │       ├── transpiler_python.py
 │       └── cli.py
 └── tests/
@@ -168,6 +179,9 @@ axiom/
 - basic types
 - Python transpiler
 - example runner
+- project scaffolding with `axiom new`
+- project builds with `axiom build`
+- project execution with `axiom run`
 
 ### Axiom 0.2
 

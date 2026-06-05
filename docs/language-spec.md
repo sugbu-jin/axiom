@@ -113,6 +113,39 @@ function needs_reorder(quantity: Number, reorder_level: Number) -> Boolean:
 
 The current Python transpiler executes `requires`, `action`, and `examples`. The parser preserves `ensures` so future compiler passes can enforce postconditions.
 
+## Project layout
+
+Axiom projects use a small configuration file and a `src` directory:
+
+```text
+todo-api/
+    axiom.toml
+    src/
+        main.ax
+    build/
+        __main__.py
+        todo_api.py
+```
+
+The initial project configuration is:
+
+```toml
+name = "todo-api"
+source = "src"
+build = "build"
+entry = "todo_api.main"
+```
+
+The current project workflow is intentionally small:
+
+```bash
+axiom new todo-api
+axiom build todo-api
+axiom run todo-api
+```
+
+`axiom build` transpiles `.ax` files from `source` into Python files under `build`. `axiom run` builds the project and executes the configured entry function.
+
 ## Primitive types
 
 Initial types:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .diagnostics import check_module
 from .parser import AxiomSyntaxError, parse_file
+from .project import AxiomProjectError, build_project, create_project, run_project
 from .transpiler_python import generate_test_code, transpile_module
 
 
@@ -47,6 +48,23 @@ def check_command(args: argparse.Namespace) -> int:
     return 1 if any(diagnostic.level == "error" for diagnostic in diagnostics) else 0
 
 
+def new_command(args: argparse.Namespace) -> int:
+    path = create_project(args.name, parent=args.directory)
+    print(f"Created Axiom project at {path}")
+    return 0
+
+
+def build_command(args: argparse.Namespace) -> int:
+    outputs = build_project(args.project)
+    for output in outputs:
+        print(output)
+    return 0
+
+
+def run_command(args: argparse.Namespace) -> int:
+    return run_project(args.project)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="axiom", description="Axiom prototype CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -64,6 +82,19 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser.add_argument("file")
     check_parser.set_defaults(func=check_command)
 
+    new_parser = subparsers.add_parser("new", help="Create a new Axiom project")
+    new_parser.add_argument("name")
+    new_parser.add_argument("-d", "--directory", default=".")
+    new_parser.set_defaults(func=new_command)
+
+    build_project_parser = subparsers.add_parser("build", help="Build an Axiom project")
+    build_project_parser.add_argument("project", nargs="?", default=".")
+    build_project_parser.set_defaults(func=build_command)
+
+    run_parser = subparsers.add_parser("run", help="Build and run an Axiom project")
+    run_parser.add_argument("project", nargs="?", default=".")
+    run_parser.set_defaults(func=run_command)
+
     return parser
 
 
@@ -73,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return args.func(args)
-    except AxiomSyntaxError as exc:
+    except (AxiomProjectError, AxiomSyntaxError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

@@ -8,6 +8,7 @@
 - Example runner
 - Basic docs
 - Collaboration metadata checks
+- Project scaffolding, build, and run commands
 
 ## 0.2 Language expansion
 
@@ -18,6 +19,7 @@
 - Enforced `ensures`
 - Better expression parser
 - Agent policy parsing
+- Multi-file project imports
 
 ## 0.3 Tooling
 

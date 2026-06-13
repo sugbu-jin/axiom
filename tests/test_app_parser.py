@@ -74,3 +74,113 @@ app TodoApp:
     diagnostics = check_app(app)
 
     assert "deploy.credentials_in_source" in [diagnostic.code for diagnostic in diagnostics]
+
+
+def test_parse_app_with_semantic_blocks():
+    source = """
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    entities:
+        Task:
+            purpose:
+                Track work a user wants to complete.
+            fields:
+                title: Text
+                completed: Boolean default false
+            relationships:
+                owner: User many-to-one
+            validations:
+                title must not be empty
+
+    roles:
+        User:
+            permissions:
+                task.manage_own
+
+    permissions:
+        task.manage_own:
+            allows:
+                create Task
+                update own Task
+
+    pages:
+        TasksPage:
+            route: /tasks
+            forms:
+                TaskForm
+            actions:
+                create_task
+
+    forms:
+        TaskForm:
+            entity: Task
+            fields:
+                title: Task.title
+            submit_action: create_task
+
+    actions:
+        create_task:
+            actor: User
+            inputs:
+                TaskForm
+            outputs:
+                Task
+            effects:
+                persist Task
+            validations:
+                title must not be empty
+
+    workflows:
+        CreateTask:
+            trigger: TaskForm submitted
+            steps:
+                Persist task: create_task
+            examples:
+                When a user adds "Buy milk", it appears in the task list.
+
+    validations:
+        TaskTitleRequired:
+            rule: Task.title != ""
+            applies_to:
+                Task.title
+
+    integrations:
+        Email:
+            provider: smtp
+            capabilities:
+                send notifications
+            credentials:
+                env:SMTP_PASSWORD
+
+    jobs:
+        DailyDigest:
+            schedule: daily
+            action: send_task_digest
+
+    events:
+        TaskCreated:
+            payload:
+                task_id: Text
+            descriptions:
+                Raised after a task is created.
+"""
+
+    app = parse_app_source(source)
+
+    assert app.entities[0].name == "Task"
+    assert app.entities[0].fields[0].name == "title"
+    assert app.entities[0].fields[1].default == "false"
+    assert app.entities[0].relationships[0].target == "User"
+    assert app.roles[0].permissions == ["task.manage_own"]
+    assert app.permissions[0].allows == ["create Task", "update own Task"]
+    assert app.pages[0].route == "/tasks"
+    assert app.pages[0].forms == ["TaskForm"]
+    assert app.forms[0].fields[0].source == "Task.title"
+    assert app.app_actions[0].effects == ["persist Task"]
+    assert app.workflows[0].steps[0].action == "create_task"
+    assert app.validations[0].rule == 'Task.title != ""'
+    assert app.integrations[0].credentials == ["env:SMTP_PASSWORD"]
+    assert app.jobs[0].schedule == "daily"
+    assert app.events[0].payload[0].name == "task_id"

@@ -3,20 +3,22 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from html import escape
-from json import dumps
+from json import dumps, loads
 from pathlib import Path
 
 from .app import AppComponent, AppSpec, DeploySpec
 from .app_parser import is_app_source, parse_app_source
-from .pipeline import parse_project_sources
+from .pipeline import StackPlan, infer_stack, parse_project_sources
 from .transpiler_python import transpile_module
 
 
 PROJECT_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
 ENTRYPOINT_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*$")
 CONFIG_FILE = "axiom.toml"
+AUTO_STACK = "auto"
 DEFAULT_STACK = "python-cli"
-SUPPORTED_STACKS = {"fastapi-react-sqlite", "python-cli", "static-site"}
+STACK_PLAN_FILE = "axiom-stack-plan.json"
+SUPPORTED_STACKS = {AUTO_STACK, "fastapi-react-sqlite", "python-cli", "static-site"}
 
 
 class AxiomProjectError(Exception):
@@ -91,7 +93,8 @@ def generate_project(source: str | Path, output: str | Path | None = None, stack
     (root / "README.md").write_text(_starter_readme(project_name, stack), encoding="utf-8")
 
     outputs = build_project(root)
-    next_steps = _next_steps(root, stack)
+    selected_stack = _read_selected_stack(load_project(root))
+    next_steps = _next_steps(root, selected_stack)
     (root / "NEXT_STEPS.txt").write_text("\n".join(next_steps) + "\n", encoding="utf-8")
 
     return GeneratedProject(root=root, outputs=outputs, next_steps=next_steps)
@@ -105,7 +108,7 @@ def load_project(path: str | Path = ".") -> Project:
 
     config = _read_config(config_path)
     name = config.get("name", root.name)
-    stack = config.get("stack", DEFAULT_STACK)
+    stack = config.get("stack", AUTO_STACK)
     if stack not in SUPPORTED_STACKS:
         raise AxiomProjectError(_unsupported_stack_message(stack))
 
@@ -129,15 +132,18 @@ def build_project(path: str | Path = ".") -> list[Path]:
     parsed_project = parse_project_sources(source_files)
     apps = parsed_project.apps
     modules = parsed_project.modules
+    stack_plan = infer_stack(parsed_project, project.stack)
+    _write_stack_plan(project, stack_plan)
+    stack = stack_plan.selected_stack
 
-    if project.stack == "python-cli":
+    if stack == "python-cli":
         return _build_python_cli(project, modules, apps)
-    if project.stack == "static-site":
+    if stack == "static-site":
         return _build_static_site(project, modules, apps)
-    if project.stack == "fastapi-react-sqlite":
+    if stack == "fastapi-react-sqlite":
         return _build_fastapi_react_sqlite(project, apps)
 
-    raise AxiomProjectError(_unsupported_stack_message(project.stack))
+    raise AxiomProjectError(_unsupported_stack_message(stack))
 
 
 def _build_python_cli(project: Project, modules: list, apps: list[AppSpec]) -> list[Path]:
@@ -164,12 +170,13 @@ def _build_python_cli(project: Project, modules: list, apps: list[AppSpec]) -> l
 def run_project(path: str | Path = ".") -> int:
     project = load_project(path)
     build_project(project.root)
+    stack = _read_selected_stack(project)
 
-    if project.stack == "static-site":
+    if stack == "static-site":
         index_path = project.build / "index.html"
         print(f"Static site built at {index_path}")
         return 0
-    if project.stack == "fastapi-react-sqlite":
+    if stack == "fastapi-react-sqlite":
         print(f"Full-stack app generated at {project.build}")
         print("Backend:  cd build/backend && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn main:app --reload")
         print("Frontend: cd build/frontend && npm install && npm run dev")
@@ -181,6 +188,37 @@ def run_project(path: str | Path = ".") -> int:
 
 def list_stacks() -> list[str]:
     return sorted(SUPPORTED_STACKS)
+
+
+def _write_stack_plan(project: Project, stack_plan: StackPlan) -> Path:
+    plan_path = project.build / STACK_PLAN_FILE
+    plan_path.write_text(
+        dumps(
+            {
+                "requested_stack": stack_plan.requested_stack,
+                "selected_stack": stack_plan.selected_stack,
+                "inferred": stack_plan.inferred,
+                "capabilities": stack_plan.capabilities,
+                "reasons": stack_plan.reasons,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return plan_path
+
+
+def _read_selected_stack(project: Project) -> str:
+    plan_path = project.build / STACK_PLAN_FILE
+    if not plan_path.exists():
+        return project.stack
+
+    data = loads(plan_path.read_text(encoding="utf-8"))
+    selected_stack = data.get("selected_stack", project.stack)
+    if selected_stack not in SUPPORTED_STACKS:
+        raise AxiomProjectError(_unsupported_stack_message(selected_stack))
+    return selected_stack
 
 
 def _next_steps(root: Path, stack: str) -> list[str]:

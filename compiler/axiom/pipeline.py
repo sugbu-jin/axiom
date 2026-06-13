@@ -45,6 +45,15 @@ class AppPlan:
     generator: str
 
 
+@dataclass(frozen=True, slots=True)
+class StackPlan:
+    requested_stack: str
+    selected_stack: str
+    inferred: bool
+    capabilities: list[str] = field(default_factory=list)
+    reasons: list[str] = field(default_factory=list)
+
+
 def parse_axiom_source(path: str | Path) -> ParsedSource:
     source_path = Path(path)
     source = source_path.read_text(encoding="utf-8")
@@ -75,6 +84,57 @@ def build_app_plans(apps: list[AppSpec], stack: str) -> list[AppPlan]:
     return [build_app_plan(app, stack) for app in apps]
 
 
+def infer_stack(parsed_project: ParsedProject, requested_stack: str) -> StackPlan:
+    capabilities = _project_capabilities(parsed_project.apps)
+
+    if requested_stack != "auto":
+        return StackPlan(
+            requested_stack=requested_stack,
+            selected_stack=requested_stack,
+            inferred=False,
+            capabilities=capabilities,
+            reasons=[f"Stack was explicitly configured as {requested_stack}."],
+        )
+
+    if not parsed_project.apps:
+        return StackPlan(
+            requested_stack=requested_stack,
+            selected_stack="python-cli",
+            inferred=True,
+            capabilities=capabilities,
+            reasons=["Only module/function sources were found, so a Python CLI build is the safest default."],
+        )
+
+    if _needs_full_stack_web_app(capabilities):
+        return StackPlan(
+            requested_stack=requested_stack,
+            selected_stack="fastapi-react-sqlite",
+            inferred=True,
+            capabilities=capabilities,
+            reasons=[
+                "The app definition includes UI plus stateful application capabilities.",
+                "React, FastAPI, and SQLite are the current supported full-stack target.",
+            ],
+        )
+
+    if "user-interface" in capabilities:
+        return StackPlan(
+            requested_stack=requested_stack,
+            selected_stack="static-site",
+            inferred=True,
+            capabilities=capabilities,
+            reasons=["The app definition describes UI content without stateful backend requirements."],
+        )
+
+    return StackPlan(
+        requested_stack=requested_stack,
+        selected_stack="python-cli",
+        inferred=True,
+        capabilities=capabilities,
+        reasons=["No UI or persistence requirements were found, so a Python CLI build is the safest default."],
+    )
+
+
 def _detect_capabilities(app: AppSpec) -> list[str]:
     capabilities: set[str] = set()
 
@@ -102,3 +162,23 @@ def _detect_capabilities(app: AppSpec) -> list[str]:
 
 def _has_persistence_effect(app: AppSpec) -> bool:
     return any("persist" in effect.lower() or "store" in effect.lower() for action in app.app_actions for effect in action.effects)
+
+
+def _project_capabilities(apps: list[AppSpec]) -> list[str]:
+    capabilities: set[str] = set()
+    for app in apps:
+        capabilities.update(build_semantic_app(app).capabilities)
+    return sorted(capabilities)
+
+
+def _needs_full_stack_web_app(capabilities: list[str]) -> bool:
+    stateful_capabilities = {
+        "authorization",
+        "background-jobs",
+        "data-model",
+        "events",
+        "integration",
+        "persistence",
+        "workflow",
+    }
+    return "user-interface" in capabilities and any(capability in stateful_capabilities for capability in capabilities)

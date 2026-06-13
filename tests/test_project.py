@@ -1,4 +1,5 @@
 import tempfile
+from json import loads
 from pathlib import Path
 
 from axiom.project import (
@@ -69,7 +70,7 @@ def test_rejects_unknown_stack():
 
 
 def test_lists_supported_stacks():
-    assert list_stacks() == ["fastapi-react-sqlite", "python-cli", "static-site"]
+    assert list_stacks() == ["auto", "fastapi-react-sqlite", "python-cli", "static-site"]
 
 
 def test_fastapi_react_sqlite_generates_login_app():
@@ -138,3 +139,82 @@ app LoginPage:
         assert (output_path / "build" / "frontend" / "src" / "App.jsx").exists()
         assert (output_path / "NEXT_STEPS.txt").exists()
         assert any("demo@example.com" in line for line in generated.next_steps)
+
+
+def test_build_project_infers_stack_when_config_has_no_stack():
+    source = """
+app LandingPage:
+    purpose:
+        Explain a product.
+
+    frontend:
+        stack: static-site
+        descriptions:
+            Show product content.
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir) / "landing-page"
+        source_dir = root / "src"
+        source_dir.mkdir(parents=True)
+        (root / "axiom.toml").write_text(
+            "\n".join(
+                [
+                    'name = "landing-page"',
+                    'source = "src"',
+                    'build = "build"',
+                    'entry = "landing_page.main"',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        (source_dir / "main.ax").write_text(source, encoding="utf-8")
+
+        outputs = build_project(root)
+        project = load_project(root)
+        stack_plan = loads((root / "build" / "axiom-stack-plan.json").read_text(encoding="utf-8"))
+
+    assert project.stack == "auto"
+    assert [path.name for path in outputs] == ["index.html"]
+    assert stack_plan["requested_stack"] == "auto"
+    assert stack_plan["selected_stack"] == "static-site"
+    assert stack_plan["inferred"] is True
+    assert stack_plan["capabilities"] == ["user-interface"]
+
+
+def test_generate_project_auto_stack_writes_stack_plan():
+    source = """
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    entities:
+        Task:
+            fields:
+                title: Text
+
+    pages:
+        TasksPage:
+            route: /tasks
+
+    actions:
+        create_task:
+            effects:
+                persist Task
+"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        source_path = Path(tmpdir) / "todo.ax"
+        output_path = Path(tmpdir) / "generated-todo"
+        source_path.write_text(source, encoding="utf-8")
+
+        generated = generate_project(source_path, output=output_path, stack="auto")
+        stack_plan = loads((output_path / "build" / "axiom-stack-plan.json").read_text(encoding="utf-8"))
+        backend_exists = (output_path / "build" / "backend" / "main.py").exists()
+
+    assert stack_plan["requested_stack"] == "auto"
+    assert stack_plan["selected_stack"] == "fastapi-react-sqlite"
+    assert stack_plan["inferred"] is True
+    assert backend_exists
+    assert any("demo@example.com" in line for line in generated.next_steps)

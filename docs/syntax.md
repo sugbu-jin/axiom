@@ -33,6 +33,60 @@ app TodoApp:
             env
 ```
 
+## Semantic app example
+
+Use semantic blocks when the app definition should drive generated behavior beyond a starter codebase.
+
+```axiom
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    entities:
+        Task:
+            fields:
+                title: Text
+                completed: Boolean default false
+            validations:
+                title must not be empty
+
+    roles:
+        User:
+            permissions:
+                task.manage_own
+
+    permissions:
+        task.manage_own:
+            allows:
+                create Task
+                update own Task
+
+    pages:
+        TasksPage:
+            route: /tasks
+            forms:
+                TaskForm
+
+    forms:
+        TaskForm:
+            entity: Task
+            fields:
+                title: Task.title
+            submit_action: create_task
+
+    actions:
+        create_task:
+            actor: User
+            effects:
+                persist Task
+
+    workflows:
+        CreateTask:
+            trigger: TaskForm submitted
+            steps:
+                Persist task: create_task
+```
+
 ## Function example
 
 ```axiom
@@ -74,6 +128,11 @@ modules: snake_case
 functions: snake_case
 types: PascalCase
 variables: snake_case
+entities: PascalCase
+pages: PascalCase
+forms: PascalCase
+actions: snake_case
+permissions: dotted.snake_case
 ```
 
 ## Collaboration metadata
@@ -96,4 +155,4 @@ function can_ship(in_stock: Boolean, address_valid: Boolean) -> Boolean:
         can_ship(false, true) == false
 ```
 
-Run `axiom check path/to/file.ax` to find missing intent or examples.
+Run `axiom check path/to/file.ax` to find missing intent, examples, ambiguous app definitions, missing data models, unclear user flows, unsafe auth assumptions, missing persistence rules, and unclear deployment security details.

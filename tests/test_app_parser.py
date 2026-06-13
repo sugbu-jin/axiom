@@ -76,6 +76,66 @@ app TodoApp:
     assert "deploy.credentials_in_source" in [diagnostic.code for diagnostic in diagnostics]
 
 
+def test_check_app_warns_about_missing_non_programmer_structure():
+    source = """
+app InventoryApp:
+    purpose:
+        Help staff manage inventory.
+
+    action:
+        Create a simple inventory app.
+
+    frontend:
+        stack: react
+        descriptions:
+            Show a screen for staff users.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Store inventory records.
+
+    database:
+        stack: sqlite
+
+    deploy:
+        target: aws-ec2
+"""
+
+    app = parse_app_source(source)
+    diagnostics = check_app(app)
+    codes = [diagnostic.code for diagnostic in diagnostics]
+
+    assert "app.missing_data_model" in codes
+    assert "app.missing_user_flows" in codes
+    assert "app.ambiguous_definition" in codes
+    assert "deploy.unclear_security" in codes
+
+
+def test_check_app_warns_about_auth_without_roles_and_permissions():
+    source = """
+app LoginApp:
+    purpose:
+        Let users sign in.
+
+    action:
+        Create a login page with password authentication.
+
+    examples:
+        When a valid user signs in, they reach the dashboard.
+
+    backend:
+        stack: fastapi
+        descriptions:
+            Validate passwords before creating a session.
+"""
+
+    app = parse_app_source(source)
+    diagnostics = check_app(app)
+
+    assert "app.unsafe_auth_assumption" in [diagnostic.code for diagnostic in diagnostics]
+
+
 def test_parse_app_with_semantic_blocks():
     source = """
 app TodoApp:
@@ -184,3 +244,69 @@ app TodoApp:
     assert app.integrations[0].credentials == ["env:SMTP_PASSWORD"]
     assert app.jobs[0].schedule == "daily"
     assert app.events[0].payload[0].name == "task_id"
+
+
+def test_check_app_accepts_semantic_structure_for_stateful_ui_flow():
+    source = """
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    examples:
+        When a user adds "Buy milk", it appears in the task list.
+
+    entities:
+        Task:
+            fields:
+                title: Text
+
+    roles:
+        User:
+            permissions:
+                task.manage_own
+
+    permissions:
+        task.manage_own:
+            allows:
+                create Task
+
+    pages:
+        TasksPage:
+            route: /tasks
+
+    forms:
+        TaskForm:
+            entity: Task
+            fields:
+                title: Task.title
+            submit_action: create_task
+
+    actions:
+        create_task:
+            actor: User
+            effects:
+                persist Task
+
+    workflows:
+        CreateTask:
+            trigger: TaskForm submitted
+            steps:
+                Persist task: create_task
+
+    deploy:
+        target: local
+        descriptions:
+            Run locally for review.
+        credentials:
+            env
+"""
+
+    app = parse_app_source(source)
+    diagnostics = check_app(app)
+    codes = [diagnostic.code for diagnostic in diagnostics]
+
+    assert "app.missing_data_model" not in codes
+    assert "app.missing_user_flows" not in codes
+    assert "app.missing_persistence_rules" not in codes
+    assert "app.unsafe_auth_assumption" not in codes
+    assert "deploy.unclear_security" not in codes

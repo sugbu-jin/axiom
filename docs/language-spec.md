@@ -162,9 +162,91 @@ function needs_reorder(quantity: Number, reorder_level: Number) -> Boolean:
 
 The current function-level Python transpiler executes `requires`, `action`, and `examples`. The parser preserves `ensures` so future compiler passes can enforce postconditions.
 
-The current app-level project builder parses `purpose`, `requires`, `action`, `examples`, `frontend`, `backend`, `database`, and `deploy`. Generators use those sections to produce stack-specific outputs.
+The current app-level project builder parses `purpose`, `requires`, `action`, `examples`, `frontend`, `backend`, `database`, `deploy`, and semantic app blocks. Generators use those sections to produce stack-specific outputs.
 
 Credentials should not be stored directly in `.ax` files. Use references such as `env` or a future secrets provider.
+
+## Semantic app blocks
+
+Semantic app blocks let non-programmers describe the app itself before choosing a technical stack. These blocks are parsed into a semantic app model and used by diagnostics and stack inference.
+
+```axiom
+app TodoApp:
+    purpose:
+        Help people track tasks.
+
+    entities:
+        Task:
+            purpose:
+                Track work a user wants to complete.
+            fields:
+                title: Text
+                completed: Boolean default false
+            relationships:
+                owner: User many-to-one
+            validations:
+                title must not be empty
+
+    roles:
+        User:
+            permissions:
+                task.manage_own
+
+    permissions:
+        task.manage_own:
+            allows:
+                create Task
+                update own Task
+
+    pages:
+        TasksPage:
+            route: /tasks
+            forms:
+                TaskForm
+            actions:
+                create_task
+
+    forms:
+        TaskForm:
+            entity: Task
+            fields:
+                title: Task.title
+            submit_action: create_task
+
+    actions:
+        create_task:
+            actor: User
+            inputs:
+                TaskForm
+            outputs:
+                Task
+            effects:
+                persist Task
+            validations:
+                title must not be empty
+
+    workflows:
+        CreateTask:
+            trigger: TaskForm submitted
+            steps:
+                Persist task: create_task
+            examples:
+                When a user adds "Buy milk", it appears in the task list.
+```
+
+Supported semantic sections:
+
+- `entities`: Stored or business objects such as `Task`, `User`, or `Order`.
+- `fields`: Entity fields such as `title: Text`, `email: Text unique`, or `completed: Boolean default false`.
+- `relationships`: Links between entities such as `owner: User many-to-one`.
+- `roles` and `permissions`: Who can do what.
+- `pages` and `forms`: User-facing screens and inputs.
+- `actions`: App-level commands such as `create_task`, including actor, inputs, outputs, effects, errors, and validations.
+- `workflows`: Multi-step user or system flows.
+- `validations`: Named rules that apply to fields or entities.
+- `integrations`: External providers and capability/credential references.
+- `jobs`: Scheduled or background work.
+- `events`: Domain events and their payloads.
 
 ## Project layout
 
@@ -184,7 +266,7 @@ The initial project configuration is:
 
 ```toml
 name = "todo-api"
-stack = "python-cli"
+stack = "auto"
 source = "src"
 build = "build"
 entry = "todo_api.main"
@@ -208,11 +290,24 @@ A stack target controls how Axiom turns app intent into runnable files.
 
 Current stack targets:
 
+- `auto`: Infers a supported target from the parsed app capabilities and writes `build/axiom-stack-plan.json`.
 - `fastapi-react-sqlite`: Generates a FastAPI backend, React frontend, and SQLite-backed login-capable app shell.
 - `python-cli`: Generates Python modules and a `build/__main__.py` entrypoint.
 - `static-site`: Generates a dependency-free `build/index.html` page from module and function intent.
 
 Future stack targets may generate APIs, full-stack web apps, mobile apps, or database-backed systems while keeping the `.ax` source focused on app purpose, data, actions, examples, and permissions.
+
+## Diagnostics
+
+`axiom check` reports missing or risky app structure for non-programmer-authored definitions. Current app diagnostics include:
+
+- Missing purpose, action, or examples.
+- Stateful app intent without `entities`.
+- UI intent without pages, forms, workflows, or examples.
+- Entities without clear persistence rules.
+- Login, password, role, or permission intent without explicit roles and permissions.
+- Broad app actions without semantic blocks that clarify the app definition.
+- Deployment sections without target, description, or external credential references.
 
 ## Primitive types
 

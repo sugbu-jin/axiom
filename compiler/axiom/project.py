@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .app import AppComponent, AppSpec, DeploySpec
 from .app_parser import is_app_source, parse_app_source
-from .parser import parse_file
+from .pipeline import parse_project_sources
 from .transpiler_python import transpile_module
 
 
@@ -126,15 +126,9 @@ def build_project(path: str | Path = ".") -> list[Path]:
         raise AxiomProjectError(f"No .ax source files found in {project.source}")
 
     project.build.mkdir(parents=True, exist_ok=True)
-    apps: list[AppSpec] = []
-    modules = []
-
-    for source_file in source_files:
-        source = source_file.read_text(encoding="utf-8")
-        if is_app_source(source):
-            apps.append(parse_app_source(source))
-        else:
-            modules.append(parse_file(source_file))
+    parsed_project = parse_project_sources(source_files)
+    apps = parsed_project.apps
+    modules = parsed_project.modules
 
     if project.stack == "python-cli":
         return _build_python_cli(project, modules, apps)
